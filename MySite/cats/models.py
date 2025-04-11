@@ -1,6 +1,12 @@
 from django.db import models
 from django.urls import reverse
 
+class Category(models.Model):
+    name = models.CharField(max_length=100, db_index=True)
+    slug = models.SlugField(max_length=255, unique=True, db_index=True)
+    def __str__(self):
+        return self.name
+
 class PublishedModel(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(is_published=Cats.Status.PUBLISHED)
@@ -20,6 +26,9 @@ class Cats(models.Model):
     is_published = models.BooleanField(choices=Status.choices, default=Status.DRAFT)
     objects = models.Manager()
     published = PublishedModel()
+    cat = models.ForeignKey('Category',
+                            on_delete=models.CASCADE,
+                            related_name='posts')
 
     class Meta:
         ordering = ['-time_create']
