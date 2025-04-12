@@ -1,7 +1,7 @@
 from django.http import HttpResponse, HttpResponseNotFound
 from django.shortcuts import render, get_object_or_404
 
-from cats.models import Cats
+from cats.models import Cats, Category, TagPost
 
 menu = [{'title': "О сайте", 'url_name': 'about'},
     {'title': "Добавить статью", 'url_name': 'add_page'},
@@ -15,6 +15,18 @@ cats_db = [
 {'id': 3, 'name': 'Мемные коты'},
 ]
 
+def show_tag_postlist(request, tag_slug):
+    tag = get_object_or_404(TagPost, slug=tag_slug)
+    posts = tag.tags.filter(is_published=Cats.Status.PUBLISHED)
+    data = {
+        'title': f'Тег: {tag.tag}',
+        'menu': menu,
+        'posts': posts,
+        'cat_selected': None,
+    }
+    return render(request, 'cats/index.html',
+                  context=data)
+
 class MyClass:
     def __init__(self, a, b):
         self.a = a
@@ -26,9 +38,11 @@ def index(request):
         'title': 'Главная страница',
         'menu': menu,
         'posts': posts,
+        'cat_selected': 0,
 
     }
-    return render(request, 'cats/index.html', context=data)
+    return render(request, 'cats/index.html',
+                  context=data)
 
 def about(request):
     return render(request, 'cats/about.html',{'title': 'О сайте', 'menu': menu})
@@ -53,12 +67,15 @@ def show_post(request, post_slug):
     return render(request, 'cats/post.html',
                   context=data)
 
-def show_category(request, cat_id):
+def show_category(request, cat_slug):
+    category = get_object_or_404(Category,
+                                 slug=cat_slug)
+    posts = Cats.published.filter(cat_id=category.pk)
     data = {
-        'title': 'Отображение по рубрикам',
+        'title': f'Рубрика: {category.name}',
         'menu': menu,
-        'posts': Cats.published.all(),
-        'cat_selected': cat_id,
+        'posts': posts,
+        'cat_selected': category.pk,
     }
     return render(request, 'cats/index.html',
                   context=data)

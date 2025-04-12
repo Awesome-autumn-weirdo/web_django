@@ -1,9 +1,31 @@
 from django.db import models
 from django.urls import reverse
 
+class Owner(models.Model):
+    name = models.CharField(max_length=100)
+    age = models.IntegerField(null=True)
+    m_count = models.IntegerField(blank=True,
+                                  default=0)
+    def __str__(self):
+        return self.name
+
+class TagPost(models.Model):
+    tag = models.CharField(max_length=100, db_index=True)
+    slug = models.SlugField(max_length=255, unique=True, db_index=True)
+
+    def get_absolute_url(self):
+        return reverse('tag', kwargs={'tag_slug':
+                                          self.slug})
+    def __str__(self):
+        return self.tag
+
 class Category(models.Model):
     name = models.CharField(max_length=100, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, db_index=True)
+
+    def get_absolute_url(self):
+        return reverse('category', kwargs={'cat_slug':
+                                               self.slug})
     def __str__(self):
         return self.name
 
@@ -29,6 +51,11 @@ class Cats(models.Model):
     cat = models.ForeignKey('Category',
                             on_delete=models.CASCADE,
                             related_name='posts')
+    tags = models.ManyToManyField('TagPost', blank=True,
+                                  related_name='tags')
+    owner = models.OneToOneField('Owner',
+                                 on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name='kot')
 
     class Meta:
         ordering = ['-time_create']
