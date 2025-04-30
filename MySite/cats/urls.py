@@ -1,5 +1,6 @@
 from django.urls import path, register_converter
 from cats import views, converters
+from django.contrib import admin
 register_converter(converters.FourDigitYearConverter,"year4")
 urlpatterns = [
     path('', views.index,name='home'),
@@ -15,3 +16,5 @@ urlpatterns = [
          name='tag'),
 ]
 
+admin.site.site_header = "Панель администрирования"
+admin.site.index_title = "Котофейник"

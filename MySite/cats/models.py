@@ -1,5 +1,7 @@
 from django.db import models
 from django.urls import reverse
+from django.utils.text import slugify
+
 
 class Owner(models.Model):
     name = models.CharField(max_length=100)
@@ -20,7 +22,8 @@ class TagPost(models.Model):
         return self.tag
 
 class Category(models.Model):
-    name = models.CharField(max_length=100, db_index=True)
+    name = models.CharField(max_length=100, db_index=True,
+                            verbose_name="Категория")
     slug = models.SlugField(max_length=255, unique=True, db_index=True)
 
     def get_absolute_url(self):
@@ -29,9 +32,14 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
+
 class PublishedModel(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(is_published=Cats.Status.PUBLISHED)
+
 
 class Cats(models.Model):
     class Status(models.IntegerChoices):
@@ -42,22 +50,30 @@ class Cats(models.Model):
                              verbose_name="Заголовок")
     slug = models.SlugField(max_length=255, db_index=True,
                             unique=True)
-    content = models.TextField(blank=True)
-    time_create = models.DateTimeField(auto_now_add=True)
-    time_update = models.DateTimeField(auto_now=True)
-    is_published = models.BooleanField(choices=Status.choices, default=Status.DRAFT)
+    content = models.TextField(blank=True, verbose_name="Текст статьи")
+    time_create = models.DateTimeField(auto_now_add=True,
+                                       verbose_name="Время создания")
+    time_update = models.DateTimeField(auto_now=True,
+                                       verbose_name="Время изменения")
+    is_published = models.BooleanField(choices=tuple(map(lambda x:
+                        (bool(x[0]), x[1]), Status.choices)),
+                        default=Status.DRAFT, verbose_name="Статус")
     objects = models.Manager()
     published = PublishedModel()
     cat = models.ForeignKey('Category',
                             on_delete=models.CASCADE,
-                            related_name='posts')
+                            related_name='posts',
+                            verbose_name="Категории")
     tags = models.ManyToManyField('TagPost', blank=True,
-                                  related_name='tags')
+                                  related_name='tags',
+                                  verbose_name="Тэги")
     owner = models.OneToOneField('Owner',
                                  on_delete=models.SET_NULL, null=True, blank=True,
-                                 related_name='kot')
+                                 related_name='kot', verbose_name="Владелец")
 
     class Meta:
+        verbose_name = 'Мемные коты'
+        verbose_name_plural = 'Мемные коты'
         ordering = ['-time_create']
         indexes = [
         models.Index(fields=['-time_create']),
@@ -68,3 +84,8 @@ class Cats(models.Model):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.title,
+                            allow_unicode=True)
+        super().save(*args, **kwargs)
