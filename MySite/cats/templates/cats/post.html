@@ -18,8 +18,9 @@ href="{{t.get_absolute_url}}">{{t.tag}}</a></li>
 {% block content %}
 <h1>{{post.title}}</h1>
 {% if post.photo %}
-<p ><img class="img-article-left"
+<img class="img-article-left"
 src="{{post.photo.url}}"></p>
 {% endif %}
+
 {{post.content|linebreaks}}
 {% endblock %}

@@ -1,3 +1,4 @@
+from django.core.validators import MinLengthValidator, MaxLengthValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
@@ -41,6 +42,10 @@ class PublishedModel(models.Manager):
         return super().get_queryset().filter(is_published=Cats.Status.PUBLISHED)
 
 
+class UploadFiles(models.Model):
+    file = models.FileField(upload_to='uploads_model')
+
+
 class Cats(models.Model):
     class Status(models.IntegerChoices):
         DRAFT = 0, 'Черновик'
@@ -48,8 +53,14 @@ class Cats(models.Model):
 
     title = models.CharField(max_length=255,
                              verbose_name="Заголовок")
-    slug = models.SlugField(max_length=255, db_index=True,
-                            unique=True)
+    slug = models.SlugField(
+        max_length=255, db_index=True,
+        unique=True,
+        validators = [
+            MinLengthValidator(5),
+            MaxLengthValidator(100),
+        ]
+    )
     content = models.TextField(blank=True, verbose_name="Текст статьи")
     time_create = models.DateTimeField(auto_now_add=True,
                                        verbose_name="Время создания")
@@ -70,6 +81,9 @@ class Cats(models.Model):
     owner = models.OneToOneField('Owner',
                                  on_delete=models.SET_NULL, null=True, blank=True,
                                  related_name='kot', verbose_name="Владелец")
+    photo = models.ImageField(upload_to="photos/%Y/%m/%d/",
+                              default=None, blank=True, null=True,
+                              verbose_name="Фото")
 
     class Meta:
         verbose_name = 'Мемные коты'
@@ -86,6 +100,6 @@ class Cats(models.Model):
         return self.title
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.title,
-                            allow_unicode=True)
+        #self.slug = slugify(self.title,
+                           # allow_unicode=True)
         super().save(*args, **kwargs)

@@ -1,7 +1,8 @@
 from django.http import HttpResponse, HttpResponseNotFound
-from django.shortcuts import render, get_object_or_404
-
-from cats.models import Cats, Category, TagPost
+from django.shortcuts import render, get_object_or_404, redirect
+import uuid
+from cats.forms import AddPostForm, UploadFileForm
+from cats.models import Cats, Category, TagPost, UploadFiles
 
 menu = [{'title': "О сайте", 'url_name': 'about'},
     {'title': "Добавить статью", 'url_name': 'add_page'},
@@ -43,12 +44,44 @@ def index(request):
     }
     return render(request, 'cats/index.html',
                   context=data)
+def handle_uploaded_file(f):
+    name = f.name
+    ext = ''
+    if '.' in name:
+        ext = name[name.rindex('.'):]
+    name = name[:name.rindex('.')]
+    suffix = str(uuid.uuid4())
+
+    with (open(f"uploads/{name}_{suffix}{ext}", "wb+")
+          as destination):
+        for chunk in f.chunks(): destination.write(chunk)
 
 def about(request):
-    return render(request, 'cats/about.html',{'title': 'О сайте', 'menu': menu})
+    if request.method == "POST":
+        form = AddPostForm(request.POST, request.FILES)
+        if form.is_valid():
+          # print(form.cleaned_data)
+            form.save()
+        return redirect('home')
+    else:
+        form = UploadFileForm()
+
+    return render(request, 'cats/about.html',
+                  {'title': 'О сайте',
+                   'menu': menu, 'form': form})
 
 def addpage(request):
-    return HttpResponse("Добавление статьи")
+    if request.method == 'POST':
+        form = AddPostForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('home')
+    else:
+         form = AddPostForm()
+
+    return render(request, 'cats/addpage.html',
+                  {'title': 'Добавление статьи', 'menu': menu,
+                   'form': form})
 
 def contact(request):
     return HttpResponse("Обратная связь")

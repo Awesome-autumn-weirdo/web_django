@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.utils.safestring import mark_safe
+
 from .models import Cats, Category
 
 
@@ -27,12 +29,13 @@ class OwnerAgeFilter(admin.SimpleListFilter):
 @admin.register(Cats)
 class CatsAdmin(admin.ModelAdmin):
     filter_vertical = ['tags']
-    fields = ['title', 'slug', 'content', 'cat', 'owner','tags']
+    fields = ['title', 'slug', 'content', 'photo','post_photo', 'cat', 'owner','tags']
+    readonly_fields = ['post_photo']
     #readonly_fields = ['slug']
     prepopulated_fields = {"slug": ("title",)}
     #exclude = ['tags', 'is_published']
-    list_display = ('id', 'title', 'time_create',
-                    'is_published', 'cat', 'brief_info')
+    list_display = ('id', 'title', 'post_photo', 'time_create',
+                    'is_published', 'cat')
     list_display_links = ('title',)
     list_editable = ('is_published',)
     ordering = ['-time_create', 'title']
@@ -41,11 +44,11 @@ class CatsAdmin(admin.ModelAdmin):
     search_fields = ['title__startswith', 'cat__name']
     list_filter = [OwnerAgeFilter,'cat__name', 'is_published']
 
-    @admin.display(description="Краткое описание",
-                   ordering='content')
-
-    def brief_info(self, cats: Cats):
-        return f"Описание {len(cats.content)} символов."
+    @admin.display(description="Изображение")
+    def post_photo(self, cats: Cats):
+        if cats.photo:
+            return mark_safe(f"<img src='{cats.photo.url}' width=50>")
+        return "Без фото"
 
     @admin.action(description="Опубликовать выбранные записи")
     def set_published(self, request, queryset):
