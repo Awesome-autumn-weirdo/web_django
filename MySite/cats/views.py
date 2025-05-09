@@ -1,8 +1,10 @@
+from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseNotFound
 from django.shortcuts import render, get_object_or_404, redirect
 import uuid
 from cats.forms import AddPostForm, UploadFileForm
-from cats.models import Cats, Category, TagPost, UploadFiles
+from cats.models import Cats, Category, TagPost
+from cats.utils import DataMixin
 
 menu = [{'title': "О сайте", 'url_name': 'about'},
     {'title': "Добавить статью", 'url_name': 'add_page'},
@@ -44,6 +46,7 @@ def index(request):
     }
     return render(request, 'cats/index.html',
                   context=data)
+
 def handle_uploaded_file(f):
     name = f.name
     ext = ''
@@ -57,6 +60,11 @@ def handle_uploaded_file(f):
         for chunk in f.chunks(): destination.write(chunk)
 
 def about(request):
+    contact_list = Cats.published.all()
+    paginator = Paginator(contact_list, 3)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     if request.method == "POST":
         form = AddPostForm(request.POST, request.FILES)
         if form.is_valid():
@@ -67,7 +75,7 @@ def about(request):
         form = UploadFileForm()
 
     return render(request, 'cats/about.html',
-                  {'title': 'О сайте',
+                  {'page_obj': page_obj,'title': 'О сайте',
                    'menu': menu, 'form': form})
 
 def addpage(request):
@@ -83,22 +91,109 @@ def addpage(request):
                   {'title': 'Добавление статьи', 'menu': menu,
                    'form': form})
 
+from django.views.generic import DetailView
+from django.views.generic import ListView
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
+
+
+class CatsHome(DataMixin,ListView):
+    template_name = 'cats/index.html'
+    context_object_name = 'posts'
+    extra_context = {
+        'title': 'Главная страница',
+        'menu': menu,
+        'cat_selected': 0,
+    }
+
+    def get_context_data(self, *, object_list=None,
+                         **kwargs):
+        return self.get_mixin_context(super().get_context_data(**kwargs),
+                                      title = 'Главная страница',
+                                      cat_selected = 0,)
+
+    def get_queryset(self):
+        return Cats.published.all().select_related('cat')
+
+
+class CatsCategory(DataMixin,ListView):
+    template_name = 'cats/index.html'
+    context_object_name = 'posts'
+    allow_empty = False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        cat = context['posts'][0].cat
+        return self.get_mixin_context(context,
+                                      title='Категория- ' + cat.name,
+                                      cat_selected = cat.id,)
+
+    def get_queryset(self):
+        return Cats.published.filter(cat__slug=self.kwargs['cat_slug']).select_related('cat')
+
+
+class TagPostList(DataMixin, ListView):
+    template_name = 'cats/index.html'
+    context_object_name = 'posts'
+    allow_empty = False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        tag = TagPost.objects.get(slug=self.kwargs['tag_slug'])
+        return self.get_mixin_context(context,
+                                      title='Тег: ' + tag.tag)
+
+    def get_queryset(self):
+         return Cats.published.filter(tags__slug=self.kwargs['tag_slug']).select_related('cat')
+
+
+class ShowPost(DataMixin, DetailView):
+    model = Cats
+    template_name = 'cats/post.html'
+    slug_url_kwarg = 'post_slug'
+    context_object_name = 'post'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return self.get_mixin_context(context,
+                                      title=context['post'])
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(Cats.published,
+                                 slug=self.kwargs[self.slug_url_kwarg])
+
+from django.urls import reverse, reverse_lazy
+
+
+class AddPage(DataMixin,CreateView):
+    model = Cats
+    template_name = 'cats/addpage.html'
+    success_url = reverse_lazy('home')
+    fields = ['title', 'slug', 'content', 'is_published',
+              'cat']
+    title_page = 'Добавление статьи'
+
+
+class UpdatePage(DataMixin,UpdateView):
+    model = Cats
+    fields = ['title', 'content', 'photo', 'is_published', 'cat']
+    template_name = 'cats/addpage.html'
+    success_url = reverse_lazy('home')
+    title_page = 'Редактирование статьи'
+
+
+class DeletePage(DataMixin,DeleteView):
+    model = Cats
+    template_name = 'cats/delete.html'
+    success_url = reverse_lazy('home')
+    context_object_name = 'post'
+    title_page = 'Удаление статьи'
+
 def contact(request):
     return HttpResponse("Обратная связь")
 
 def login(request):
     return HttpResponse("Авторизация")
 
-def show_post(request, post_slug):
-    post = get_object_or_404(Cats, slug=post_slug)
-    data = {
-        'title': post.title,
-        'menu': menu,
-        'post': post,
-        'cat_selected': 1,
-    }
-    return render(request, 'cats/post.html',
-                  context=data)
 
 def show_category(request, cat_slug):
     category = get_object_or_404(Category,
