@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'cats.apps.CatsConfig',
+    'users.apps.UsersConfig',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
@@ -55,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'MySite.urls'
@@ -70,6 +73,11 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'users.context_processors.get_cats_context',
             ],
         },
     },
@@ -77,6 +85,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'MySite.wsgi.application'
 
+DEFAULT_USER_IMAGE = MEDIA_URL + 'users/default.jpg'
+
+LOGOUT_REDIRECT_URL = 'home'
+LOGIN_URL = 'users:login'
+AUTHENTICATION_BACKENDS = [
+'django.contrib.auth.backends.ModelBackend',
+'users.authentication.EmailAuthBackend',
+]
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+AUTH_USER_MODEL = 'users.User'
+
+EMAIL_HOST = "smtp.yandex.ru"
+EMAIL_PORT = 465
+EMAIL_HOST_USER = "tessgyp@yandex.ru"
+EMAIL_HOST_PASSWORD = "uoyyammthuxxcvcm"
+EMAIL_USE_SSL = True
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+SERVER_EMAIL = EMAIL_HOST_USER
+EMAIL_ADMIN = EMAIL_HOST_USER
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases

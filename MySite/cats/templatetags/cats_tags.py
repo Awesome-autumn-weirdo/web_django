@@ -4,7 +4,16 @@ from django.db.models import Count
 import cats.views as views
 from cats.models import Category, TagPost
 
+
 register = template.Library()
+menu = [{'title': "О сайте", 'url_name': 'about'},
+        {'title': "Добавить статью", 'url_name': 'add_page'},
+        {'title': "Обратная связь", 'url_name': 'contact'},
+        {'title': "Войти", 'url_name': 'login'}
+        ]
+@register.simple_tag
+def get_menu():
+    return menu
 
 @register.simple_tag()
 def get_categories():

@@ -1,7 +1,7 @@
+from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator, MaxLengthValidator
 from django.db import models
 from django.urls import reverse
-from django.utils.text import slugify
 
 
 class Owner(models.Model):
@@ -21,6 +21,11 @@ class TagPost(models.Model):
                                           self.slug})
     def __str__(self):
         return self.tag
+
+    class Meta:
+        verbose_name = 'Тэг'
+        verbose_name_plural = 'Тэги'
+
 
 class Category(models.Model):
     name = models.CharField(max_length=100, db_index=True,
@@ -84,10 +89,13 @@ class Cats(models.Model):
     photo = models.ImageField(upload_to="photos/%Y/%m/%d/",
                               default=None, blank=True, null=True,
                               verbose_name="Фото")
+    author = models.ForeignKey(get_user_model(),
+                               on_delete=models.SET_NULL, related_name='posts',
+                               null=True, default=None)
 
     class Meta:
-        verbose_name = 'Мемные коты'
-        verbose_name_plural = 'Мемные коты'
+        verbose_name = 'Котёночек'
+        verbose_name_plural = 'Котяточки'
         ordering = ['-time_create']
         indexes = [
         models.Index(fields=['-time_create']),

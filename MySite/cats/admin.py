@@ -3,6 +3,9 @@ from django.utils.safestring import mark_safe
 
 from .models import Cats, Category
 
+from .models import TagPost
+
+admin.site.register(TagPost)
 
 class OwnerAgeFilter(admin.SimpleListFilter):
     title = 'Возраст владельца'

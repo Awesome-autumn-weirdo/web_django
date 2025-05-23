@@ -1,82 +1,112 @@
 {% load static %}
 {% load cats_tags %}
-
+{% get_menu as mainmenu %}
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{{title}} | Котофейник </title>
-    <link type="text/css" href="{% static 'cats/css/styles.css' %}" rel="stylesheet" />
+    <title>{{ title }} | Котофейник</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <link rel="shortcut icon" href="{% static 'cats/images/cat-favicon.png' %}" type="image/x-icon"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link type="text/css" href="{% static 'cats/css/styles.css' %}" rel="stylesheet" />
+    <link rel="shortcut icon" href="{% static 'cats/images/cat-favicon.png' %}" type="image/x-icon" />
 </head>
 <body>
-<table class="table-page" border=0 cellpadding="0" cellspacing="0">
-<tr><td valign=top>
+<table class="table-page" border="0" cellpadding="0" cellspacing="0">
+    <tr>
+        <td valign="top">
 
-{% block mainmenu %}
-    <div class="header">
-        <ul id="mainmenu" class="mainmenu">
-            <li class="logo"><a class="logo-link" href="{% url 'home' %}"></a></li>
-
-            {% for m in menu %}
-                {% if not forloop.last %}
-                    <li><a href="{% url m.url_name %}">{{m.title}} <span class="cat-paw"></span></a></li>
-                {% else %}
-                    <li class="last"><a href="{% url m.url_name %}">{{m.title}} <span class="cat-paw"></span></a></li>
-                {% endif %}
-            {% endfor %}
-        </ul>
-        <div class="clear"></div>
-    </div>
-{% endblock mainmenu %}
-
-<table class="table-content" border=0 cellpadding="0" cellspacing="0">
-<tr>
-    <!-- Sidebar слева -->
-    <td valign="top" class="left-chapters">
-        <ul id="leftchapters">
-            {% if cat_selected == 0 or cat_selected is None %}
-                <li class="selected">Все категории <span class="cat-paw"></span></li>
+            <!-- Панель авторизации -->
+            {% if user.is_authenticated %}
+                <li class="last">
+                    <a href="{% url 'users:profile' %}">{{user.username}}</a> | <a href="{% url 'users:logout' %}">Выйти</a>
+                </li>
             {% else %}
-                <li><a href="{% url 'home' %}">Все категории</a></li>
+                <li class="last">
+                    <a href="{% url 'users:login' %}">Войти</a> | <a href="{% url 'users:register' %}">Регистрация</a>
+                </li>
             {% endif %}
-            {% show_categories cat_selected %}
-            <li class="share">
-                <p>Наш канал</p>
-                <a class="share-yt" href="https://www.youtube.com/" target="_blank" rel="nofollow"></a>
-            </li>
-        </ul>
 
-        <!-- 🔽 Добавленный тег — список всех тегов -->
-        {% show_all_tags %}
-    </td>
-    <!-- Конец Sidebar'а -->
+            <!-- Главное меню -->
+            {% block mainmenu %}
+            <div class="header">
+                <ul id="mainmenu" class="mainmenu">
+                    <!-- Логотип -->
+                    <li class="logo">
+                        <a class="logo-link" href="{% url 'home' %}"></a>
+                    </li>
 
-    <td valign="top" class="content">
-        <!-- Хлебные крошки -->
-        {% block breadcrumbs %}
-        {% endblock %}
+                    <!-- Пункты меню -->
+                    {% for m in mainmenu %}
+                        {% if not forloop.last %}
+                            <li>
+                                <a href="{% url m.url_name %}">
+                                    {{ m.title }} <span class="cat-paw"></span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="last">
+                                <a href="{% url m.url_name %}">
+                                    {{ m.title }} <span class="cat-paw"></span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+                <div class="clear"></div>
+            </div>
+            {% endblock mainmenu %}
 
-        <!-- Блок контента -->
-        <div class="content-text">
-            {% block content %}
-            {% endblock %}
-        </div>
-        <!-- Конец блока контента -->
-        {% block navigation %}
-        {% endblock %}
-    </td>
-</tr></table>
+            <!-- Контент -->
+            <table class="table-content" border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                    <!-- Боковое меню -->
+                    <td valign="top" class="left-chapters">
+                        <ul id="leftchapters">
+                            {% if cat_selected == 0 or cat_selected is None %}
+                                <li class="selected">Все категории <span class="cat-paw"></span></li>
+                            {% else %}
+                                <li><a href="{% url 'home' %}">Все категории</a></li>
+                            {% endif %}
 
-</td></tr>
+                            {% show_categories cat_selected %}
 
-<!-- Footer -->
-<tr><td valign=top>
-    <div id="footer">
-        <p>&copy; 2025 Котофейник. Все права защищены. Мяу! <span class="cat-paw"></span></p>
-    </div>
-</td></tr>
+                            <li class="share">
+                                <p>Наш канал</p>
+                                <a class="share-yt" href="https://www.youtube.com/" target="_blank" rel="nofollow"></a>
+                            </li>
+                        </ul>
+
+                        <!-- Теги -->
+                        {% show_all_tags %}
+                    </td>
+
+                    <!-- Основной контент -->
+                    <td valign="top" class="content">
+                        {% block breadcrumbs %}
+                        {% endblock %}
+
+                        <div class="content-text">
+                            {% block content %}
+                            {% endblock %}
+                        </div>
+
+                        {% block navigation %}
+                        {% endblock %}
+                    </td>
+                </tr>
+            </table>
+
+        </td>
+    </tr>
+
+    <!-- Подвал -->
+    <tr>
+        <td valign="top">
+            <div id="footer">
+                <p>&copy; 2025 Котофейник. Все права защищены. Мяу! <span class="cat-paw"></span></p>
+            </div>
+        </td>
+    </tr>
 </table>
 </body>
 </html>

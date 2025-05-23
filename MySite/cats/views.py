@@ -1,3 +1,5 @@
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseNotFound
 from django.shortcuts import render, get_object_or_404, redirect
@@ -5,6 +7,11 @@ import uuid
 from cats.forms import AddPostForm, UploadFileForm
 from cats.models import Cats, Category, TagPost
 from cats.utils import DataMixin
+from django.views.generic import DetailView
+from django.views.generic import ListView
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.urls import reverse, reverse_lazy
+
 
 menu = [{'title': "О сайте", 'url_name': 'about'},
     {'title': "Добавить статью", 'url_name': 'add_page'},
@@ -59,6 +66,7 @@ def handle_uploaded_file(f):
           as destination):
         for chunk in f.chunks(): destination.write(chunk)
 
+@login_required(login_url='/admin/')
 def about(request):
     contact_list = Cats.published.all()
     paginator = Paginator(contact_list, 3)
@@ -90,10 +98,6 @@ def addpage(request):
     return render(request, 'cats/addpage.html',
                   {'title': 'Добавление статьи', 'menu': menu,
                    'form': form})
-
-from django.views.generic import DetailView
-from django.views.generic import ListView
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
 
 
 class CatsHome(DataMixin,ListView):
@@ -161,25 +165,30 @@ class ShowPost(DataMixin, DetailView):
         return get_object_or_404(Cats.published,
                                  slug=self.kwargs[self.slug_url_kwarg])
 
-from django.urls import reverse, reverse_lazy
 
-
-class AddPage(DataMixin,CreateView):
+class AddPage(PermissionRequiredMixin, LoginRequiredMixin,DataMixin,CreateView):
     model = Cats
+    # login_url = '/admin/'
     template_name = 'cats/addpage.html'
     success_url = reverse_lazy('home')
     fields = ['title', 'slug', 'content', 'is_published',
               'cat']
     title_page = 'Добавление статьи'
+    permission_required = 'cats.add_cats'
+
+    def form_valid(self, form):
+        w = form.save(commit=False)
+        w.author = self.request.user
+        return super().form_valid(form)
 
 
-class UpdatePage(DataMixin,UpdateView):
+class UpdatePage(PermissionRequiredMixin, DataMixin,UpdateView):
     model = Cats
     fields = ['title', 'content', 'photo', 'is_published', 'cat']
     template_name = 'cats/addpage.html'
     success_url = reverse_lazy('home')
     title_page = 'Редактирование статьи'
-
+    permission_required = 'cats.change_cats'
 
 class DeletePage(DataMixin,DeleteView):
     model = Cats
@@ -188,6 +197,8 @@ class DeletePage(DataMixin,DeleteView):
     context_object_name = 'post'
     title_page = 'Удаление статьи'
 
+
+@permission_required(perm='women.view_women', raise_exception=True)
 def contact(request):
     return HttpResponse("Обратная связь")
 
